@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan Gym — Arthur</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0F0F13;--surface:#18181F;--surface2:#22222C;--border:#2E2E3A;--text:#F0EFE8;--muted:#888898;--push:#4A9EFF;--pull:#4FCB8A;--legs:#F5A623;--upper:#A78BFA;--lower:#F87171}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;max-width:480px;margin:0 auto;padding:0 0 80px}
+.hdr{padding:20px 16px 12px;border-bottom:1px solid var(--border)}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.hdr-title{font-size:17px;font-weight:600}
+.hdr-badge{font-size:9px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:4px}
+.hdr-sub{font-size:11px;color:var(--muted)}
+.day-nav{display:flex;gap:6px;padding:12px 16px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:10}
+.day-nav::-webkit-scrollbar{display:none}
+.day-btn{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--muted);font-size:9px}
+.day-btn .d-short{font-size:10px;font-weight:600;letter-spacing:.04em}
+.day-btn.active{color:#0F0F13}
+.day-btn[data-day="0"].active{background:var(--push);border-color:var(--push)}
+.day-btn[data-day="1"].active{background:var(--pull);border-color:var(--pull)}
+.day-btn[data-day="2"].active{background:var(--legs);border-color:var(--legs)}
+.day-btn[data-day="3"].active{background:var(--upper);border-color:var(--upper)}
+.day-btn[data-day="4"].active{background:var(--lower);border-color:var(--lower)}
+.panel{display:none;padding:14px 16px}
+.panel.active{display:block}
+.panel-hdr{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.panel-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.panel-title{font-size:15px;font-weight:600}
+.panel-muscle{font-size:11px;color:var(--muted)}
+.prog-note{background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:11px;color:var(--muted);line-height:1.6;border-left:2px solid var(--border)}
+.prog-note strong{color:var(--text);font-weight:500}
+.ex-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px}
+.ex-card.compound{border-left:3px solid}
+.ex-card[data-day="0"].compound{border-left-color:var(--push)}
+.ex-card[data-day="1"].compound{border-left-color:var(--pull)}
+.ex-card[data-day="2"].compound{border-left-color:var(--legs)}
+.ex-card[data-day="3"].compound{border-left-color:var(--upper)}
+.ex-card[data-day="4"].compound{border-left-color:var(--lower)}
+.ex-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.ex-name{font-size:13px;font-weight:500;line-height:1.3}
+.ex-badge{font-size:8px;padding:2px 6px;border-radius:4px;white-space:nowrap;flex-shrink:0;margin-top:2px;font-weight:600}
+.b0{background:rgba(74,158,255,.15);color:var(--push)}
+.b1{background:rgba(79,203,138,.15);color:var(--pull)}
+.b2{background:rgba(245,166,35,.15);color:var(--legs)}
+.b3{background:rgba(167,139,250,.15);color:var(--upper)}
+.b4{background:rgba(248,113,113,.15);color:var(--lower)}
+.ex-stats{display:flex;gap:6px;margin-bottom:8px}
+.ex-stat{background:var(--surface2);border-radius:5px;padding:5px 8px;display:flex;flex-direction:column;align-items:center;min-width:52px}
+.ex-stat-val{font-size:13px;font-weight:600;color:var(--text)}
+.ex-stat-lbl{font-size:9px;color:var(--muted);margin-top:1px}
+.ex-note{font-size:11px;color:var(--muted);line-height:1.5;padding-top:7px;border-top:1px solid var(--border)}
+.ex-sub{font-size:10px;color:var(--muted);margin-top:4px;font-style:italic}
+.hiit-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px}
+.hiit-title{font-size:10px;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-weight:600}
+.hiit-step{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;font-size:12px;margin-bottom:4px}
+.hiit-step:last-child{margin-bottom:0}
+.hiit-step.w{background:rgba(255,255,255,.04)}
+.hiit-step.s{background:rgba(248,113,113,.12);color:#FCA5A5}
+.hiit-step.r{background:rgba(74,158,255,.08);color:#93C5FD}
+.hiit-step.c{background:rgba(255,255,255,.04)}
+.hl{font-weight:600;min-width:110px;font-size:11px}
+.hd{font-size:11px;color:var(--muted)}
+.hiit-step.s .hd{color:#FCA5A5;opacity:.8}
+.hiit-step.r .hd{color:#93C5FD;opacity:.8}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-top">
+    <span class="hdr-title">Plan Gym</span>
+    <span class="hdr-badge">PPL + UL · 5 DÍAS</span>
+  </div>
+  <div class="hdr-sub">Frecuencia 2x/semana · Recomposición corporal</div>
+</div>
+
+<div class="day-nav">
+  <button class="day-btn active" data-day="0" onclick="show(0)"><span class="d-short">LUN</span>Push A</button>
+  <button class="day-btn" data-day="1" onclick="show(1)"><span class="d-short">MAR</span>Pull A</button>
+  <button class="day-btn" data-day="2" onclick="show(2)"><span class="d-short">MIÉ</span>Legs A</button>
+  <button class="day-btn" data-day="3" onclick="show(3)"><span class="d-short">JUE</span>Upper</button>
+  <button class="day-btn" data-day="4" onclick="show(4)"><span class="d-short">VIE</span>Lower B</button>
+</div>
+
+<!-- LUNES -->
+<div class="panel active" id="d0">
+  <div class="panel-hdr"><div class="panel-dot" style="background:var(--push)"></div><div><div class="panel-title">Push A — Lunes</div><div class="panel-muscle">Pecho · Hombros · Tríceps</div></div></div>
+  <div class="prog-note"><strong>Progresión:</strong> Completa el rango superior en todas las series → sube 2.5 kg la siguiente semana.</div>
+
+  <div class="ex-card compound" data-day="0">
+    <div class="ex-top"><span class="ex-name">Press banca con barra</span><span class="ex-badge b0">COMPUESTO 1°</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">4</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">5-8</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">3 min</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Progresa 2.5 kg cuando completes las 8 reps con 2 en reserva.<br><span class="ex-sub">Alt: Press banca mancuernas 3×10</span></div>
+  </div>
+
+  <div class="ex-card compound" data-day="0">
+    <div class="ex-top"><span class="ex-name">Press militar mancuernas</span><span class="ex-badge b0">COMPUESTO 2°</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">10-12</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">90 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Ya tienes progresión — sigue subiendo al llegar al tope del rango.</div>
+  </div>
+
+  <div class="ex-card" data-day="0">
+    <div class="ex-top"><span class="ex-name">Press inclinado mancuernas</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">12</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">60 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Banco a 30-45°. No pasar de 45° para no activar excesivamente el deltoides.</div>
+  </div>
+
+  <div class="ex-card" data-day="0">
+    <div class="ex-top"><span class="ex-name">Elevaciones laterales</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">15</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">45 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Codo ligeramente flexionado. Sube hasta altura de hombro, no más.</div>
+  </div>
+
+  <div class="ex-card" data-day="0">
+    <div class="ex-top"><span class="ex-name">Aperturas en máquina (peck)</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">12-15</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">45 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Contrae 1 s en el pico. Sentir el pectoral, no el hombro.</div>
+  </div>
+
+  <div class="ex-card" data-day="0">
+    <div class="ex-top"><span class="ex-name">Tríceps en cuerda</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">12-15</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">45 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Codos fijos al cuerpo. Extensión completa.</div>
+  </div>
+
+  <div class="hiit-card">
+    <div class="hiit-title">HIIT CAMINADORA — AL FINAL</div>
+    <div class="hiit-step w"><span class="hl">Calentamiento</span><span class="hd">4 km/h · incl 3% · 2 min</span></div>
+    <div class="hiit-step s"><span class="hl">Sprint ×5</span><span class="hd">8.5-9 km/h · plana · 30 s</span></div>
+    <div class="hiit-step r"><span class="hl">Recuperación ×5</span><span class="hd">3.5 km/h · plana · 90 s</span></div>
+    <div class="hiit-step c"><span class="hl">Enfriamiento</span><span class="hd">3.5 km/h · 2 min</span></div>
+  </div>
+</div>
+
+<!-- MARTES -->
+<div class="panel" id="d1">
+  <div class="panel-hdr"><div class="panel-dot" style="background:var(--pull)"></div><div><div class="panel-title">Pull A — Martes</div><div class="panel-muscle">Espalda · Bíceps</div></div></div>
+
+  <div class="ex-card compound" data-day="1">
+    <div class="ex-top"><span class="ex-name">Peso muerto convencional</span><span class="ex-badge b1">COMPUESTO 1°</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">4</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">5-6</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">3 min</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Espalda neutra en todo momento. Prioriza técnica sobre carga.<br><span class="ex-sub">Alt: Peso muerto rumano 4×8</span></div>
+  </div>
+
+  <div class="ex-card compound" data-day="1">
+    <div class="ex-top"><span class="ex-name">Jalón al pecho / Dominadas</span><span class="ex-badge b1">COMPUESTO 2°</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">4</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">8-10</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">2 min</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Agarre pronado ancho. Dominadas: añade lastre al llegar a 10 reps limpias.</div>
+  </div>
+
+  <div class="ex-card" data-day="1">
+    <div class="ex-top"><span class="ex-name">Remo en máquina</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">10-12</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">90 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Lleva el codo atrás más allá de la espalda. Contrae la escápula al final.</div>
+  </div>
+
+  <div class="ex-card" data-day="1">
+    <div class="ex-top"><span class="ex-name">Face pull con cuerda</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">15-20</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">45 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Cuerda a altura de ojos. Separa las manos al final. Esencial para salud del hombro.</div>
+  </div>
+
+  <div class="ex-card" data-day="1">
+    <div class="ex-top"><span class="ex-name">Curl bíceps mancuernas</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">12</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">45 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Supinación completa. Sin balanceo de tronco.</div>
+  </div>
+
+  <div class="hiit-card">
+    <div class="hiit-title">HIIT CAMINADORA — AL FINAL</div>
+    <div class="hiit-step w"><span class="hl">Calentamiento</span><span class="hd">4 km/h · incl 3% · 2 min</span></div>
+    <div class="hiit-step s"><span class="hl">Sprint ×5</span><span class="hd">8.5-9 km/h · plana · 30 s</span></div>
+    <div class="hiit-step r"><span class="hl">Recuperación ×5</span><span class="hd">3.5 km/h · plana · 90 s</span></div>
+    <div class="hiit-step c"><span class="hl">Enfriamiento</span><span class="hd">3.5 km/h · 2 min</span></div>
+  </div>
+</div>
+
+<!-- MIÉRCOLES -->
+<div class="panel" id="d2">
+  <div class="panel-hdr"><div class="panel-dot" style="background:var(--legs)"></div><div><div class="panel-title">Legs A — Miércoles</div><div class="panel-muscle">Cuádriceps · Glúteos · Isquiotibiales</div></div></div>
+  <div class="prog-note"><strong>Semanas 1-2:</strong> Sentadilla en 3×8 con tu peso habitual. Semana 3+: 4×6-10 con progresión.</div>
+
+  <div class="ex-card compound" data-day="2">
+    <div class="ex-top"><span class="ex-name">Sentadilla en barra</span><span class="ex-badge b2">COMPUESTO 1°</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">4</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">6-10</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">3 min</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Sem 1-2: hacer 3×8 volumen moderado. Profundidad mínima paralela al suelo.<br><span class="ex-sub">Alt: Hack squat 4×10</span></div>
+  </div>
+
+  <div class="ex-card compound" data-day="2">
+    <div class="ex-top"><span class="ex-name">Hip thrust en barra</span><span class="ex-badge b2">COMPUESTO 2°</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">10-12</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">90 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">NUEVO. Sem 1-2: sin carga o barra vacía para aprender el patrón motor.<br><span class="ex-sub">Alt: Hip thrust en banco sin barra</span></div>
+  </div>
+
+  <div class="ex-card" data-day="2">
+    <div class="ex-top"><span class="ex-name">Leg press</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">12-15</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">90 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Pies al ancho de hombros. No bloquees rodillas en extensión.</div>
+  </div>
+
+  <div class="ex-card" data-day="2">
+    <div class="ex-top"><span class="ex-name">Curl femoral</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">12</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">60 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Bajada lenta y controlada. Rango completo de movimiento.</div>
+  </div>
+
+  <div class="ex-card" data-day="2">
+    <div class="ex-top"><span class="ex-name">Extensión de cuádriceps</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">15</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">60 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Aguanta 2 s en extensión completa en cada rep.</div>
+  </div>
+
+  <div class="ex-card" data-day="2">
+    <div class="ex-top"><span class="ex-name">Pantorrillas de pie</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">20</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">45 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Sube 2 s · aguanta 1 s · baja 2 s. Rango completo.</div>
+  </div>
+
+  <div class="hiit-card">
+    <div class="hiit-title">HIIT CAMINADORA — AL FINAL</div>
+    <div class="hiit-step w"><span class="hl">Calentamiento</span><span class="hd">4 km/h · incl 3% · 2 min</span></div>
+    <div class="hiit-step s"><span class="hl">Sprint ×5</span><span class="hd">8.5-9 km/h · plana · 30 s</span></div>
+    <div class="hiit-step r"><span class="hl">Recuperación ×5</span><span class="hd">3.5 km/h · plana · 90 s</span></div>
+    <div class="hiit-step c"><span class="hl">Enfriamiento</span><span class="hd">3.5 km/h · 2 min</span></div>
+  </div>
+</div>
+
+<!-- JUEVES -->
+<div class="panel" id="d3">
+  <div class="panel-hdr"><div class="panel-dot" style="background:var(--upper)"></div><div><div class="panel-title">Upper — Jueves</div><div class="panel-muscle">Push B + Pull B · 2° estímulo</div></div></div>
+  <div class="prog-note"><strong>Sesión de 2° estímulo.</strong> Pesos moderados, enfoque en contracción. No ir al fallo.</div>
+
+  <div class="ex-card compound" data-day="3">
+    <div class="ex-top"><span class="ex-name">Press inclinado barra / MD</span><span class="ex-badge b3">COMPUESTO 1°</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">10-12</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">90 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Ángulo diferente al Lunes para nuevo estímulo.</div>
+  </div>
+
+  <div class="ex-card compound" data-day="3">
+    <div class="ex-top"><span class="ex-name">Remo con mancuerna</span><span class="ex-badge b3">COMPUESTO 2°</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">10-12</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">90 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Unilateral. Rodilla y mano apoyadas en banco. Rango completo.</div>
+  </div>
+
+  <div class="ex-card" data-day="3">
+    <div class="ex-top"><span class="ex-name">Press militar mancuernas</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">12</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">60 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">2° estímulo de hombros. Peso moderado, conexión mente-músculo.</div>
+  </div>
+
+  <div class="ex-card" data-day="3">
+    <div class="ex-top"><span class="ex-name">Jalón agarre neutro / cerrado</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">12</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">60 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Agarre diferente al Martes. Activa más redondo mayor y bíceps braquial.</div>
+  </div>
+
+  <div class="ex-card" data-day="3">
+    <div class="ex-top"><span class="ex-name">Elevaciones laterales</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">15</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">45 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">2° estímulo lateral. Carga ligera, enfoque en quemado.</div>
+  </div>
+
+  <div class="ex-card" data-day="3">
+    <div class="ex-top"><span class="ex-name">Face pull con cuerda</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">15</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">45 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">2° estímulo. Salud de hombro — nunca omitir.</div>
+  </div>
+
+  <div class="ex-card" data-day="3">
+    <div class="ex-top"><span class="ex-name">Curl alterno + Tríceps overhead</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">2+2</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">12</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">45 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Volumen de mantenimiento. El Martes fue el estímulo principal.</div>
+  </div>
+
+  <div class="hiit-card">
+    <div class="hiit-title">HIIT CAMINADORA — AL FINAL</div>
+    <div class="hiit-step w"><span class="hl">Calentamiento</span><span class="hd">4 km/h · incl 3% · 2 min</span></div>
+    <div class="hiit-step s"><span class="hl">Sprint ×5</span><span class="hd">8.5-9 km/h · plana · 30 s</span></div>
+    <div class="hiit-step r"><span class="hl">Recuperación ×5</span><span class="hd">3.5 km/h · plana · 90 s</span></div>
+    <div class="hiit-step c"><span class="hl">Enfriamiento</span><span class="hd">3.5 km/h · 2 min</span></div>
+  </div>
+</div>
+
+<!-- VIERNES -->
+<div class="panel" id="d4">
+  <div class="panel-hdr"><div class="panel-dot" style="background:var(--lower)"></div><div><div class="panel-title">Lower B — Viernes</div><div class="panel-muscle">Glúteos · Isquios · Cuádriceps</div></div></div>
+
+  <div class="ex-card compound" data-day="4">
+    <div class="ex-top"><span class="ex-name">Hack squat</span><span class="ex-badge b4">COMPUESTO 1°</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">4</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">10-12</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">2 min</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Pies ligeramente elevados si disponible para mayor activación de cuádriceps.<br><span class="ex-sub">Alt: Sentadilla búlgara 3×10</span></div>
+  </div>
+
+  <div class="ex-card compound" data-day="4">
+    <div class="ex-top"><span class="ex-name">Peso muerto rumano (RDL)</span><span class="ex-badge b4">COMPUESTO 2°</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">10-12</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">90 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Bisagra de cadera. Espalda neutra, empuja caderas atrás. Énfasis en isquios y glúteo.</div>
+  </div>
+
+  <div class="ex-card" data-day="4">
+    <div class="ex-top"><span class="ex-name">Hip thrust en barra</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">12-15</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">90 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">2° estímulo de glúteos. Puedes subir carga respecto al Miércoles.</div>
+  </div>
+
+  <div class="ex-card" data-day="4">
+    <div class="ex-top"><span class="ex-name">Abductor en máquina</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">15</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">60 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Glúteo medio. Esencial para estabilidad de rodilla y cadera.</div>
+  </div>
+
+  <div class="ex-card" data-day="4">
+    <div class="ex-top"><span class="ex-name">Extensión cuádriceps</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">2</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">15</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">45 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Mantenimiento. Cuádriceps ya estimulados el Miércoles.</div>
+  </div>
+
+  <div class="ex-card" data-day="4">
+    <div class="ex-top"><span class="ex-name">Pantorrillas sentado</span></div>
+    <div class="ex-stats"><div class="ex-stat"><span class="ex-stat-val">3</span><span class="ex-stat-lbl">series</span></div><div class="ex-stat"><span class="ex-stat-val">20</span><span class="ex-stat-lbl">reps</span></div><div class="ex-stat"><span class="ex-stat-val">45 s</span><span class="ex-stat-lbl">descanso</span></div></div>
+    <div class="ex-note">Trabaja el sóleo. Ángulo diferente a las pantorrillas del Miércoles.</div>
+  </div>
+
+  <div class="hiit-card">
+    <div class="hiit-title">HIIT CAMINADORA — AL FINAL</div>
+    <div class="hiit-step w"><span class="hl">Calentamiento</span><span class="hd">4 km/h · incl 3% · 2 min</span></div>
+    <div class="hiit-step s"><span class="hl">Sprint ×5</span><span class="hd">8.5-9 km/h · plana · 30 s</span></div>
+    <div class="hiit-step r"><span class="hl">Recuperación ×5</span><span class="hd">3.5 km/h · plana · 90 s</span></div>
+    <div class="hiit-step c"><span class="hl">Enfriamiento</span><span class="hd">3.5 km/h · 2 min</span></div>
+  </div>
+</div>
+
+<script>
+function show(d){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.day-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('d'+d).classList.add('active');
+  document.querySelector('[data-day="'+d+'"]').classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>
